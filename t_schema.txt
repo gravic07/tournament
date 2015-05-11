@@ -1,0 +1,44 @@
+
++---------------------+    +---------------------+    +---------------------+
+| players             |    | matches             |    | standings           |
++---------------------+    +---------------------+    +---------------------+
+|  name               |    |  playerID           |    |  playerID           |
+|  id (PRIMARY KEY)   |    |  opponentID         |    |  playerName         |
++---------------------+    |  result             |    |  wins               |
+                           |  m_id (PRIMARY KEY) |    |  matches            |
+                           |  UNIQUE (playerID,	 |    +---------------------+
+                           |     opponentID)     |
+                           +---------------------+
+
+
++---------------------+    +---------------------+    +---------------------+
+| v_wins              |    | matches             |    | standings           |
++---------------------+    +---------------------+    +---------------------+
+|  name               |    |  playerID           |    |  playerID           |
+|  id (PRIMARY KEY)   |    |  opponentID         |    |  playerName         |
++---------------------+    |  result             |    |  wins               |
+                           |  m_id (PRIMARY KEY) |    |  matches            |
+                           |  UNIQUE (playerID,	 |    +---------------------+
+                           |     opponentID)     |
+                           +---------------------+
+
+
+
+
+
+
+
+
+
+INSERT INTO TABLE1
+select * from table2 
+    where not exists(
+            select * from table1 
+                 where name=TABLE2.Name 
+                       and count=TABLE2.Count
+                     )
+
+INSERT INTO TABLE1 (id, col_1, col_2, col_3)
+SELECT id, 'data1', 'data2', 'data3'
+FROM TABLE2
+WHERE col_a = 'something';
