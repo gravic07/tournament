@@ -5,7 +5,7 @@
 CREATE VIEW v_wins AS
 	SELECT players.id, players.name, COALESCE(count(matches.result), 0) AS wins
 	FROM players LEFT JOIN matches ON players.id = matches.playerid
-	WHERE matches.result =   NEEDS TO BY WIN IN SINGLE QUOTES
+	WHERE matches.result = 'win'
 	GROUP BY players.id
 	ORDER BY wins DESC;
 
