@@ -12,6 +12,16 @@ def connect():
     return psycopg2.connect("dbname=tournament")
 
 
+def deleteTournaments():
+    """Removes all tournaments."""
+    db = connect()
+    db_cursor = db.cursor()
+    query = "DELETE FROM matches"
+    db_cursor.execute(query)
+    db.commit()
+    db.close()
+
+
 def deleteMatches():
     """Remove all the match records from the database."""
     db = connect()
@@ -46,23 +56,26 @@ def countPlayers():
     db.commit()
     db.close()
     return rows[0]
+    print '!!-- There are ' + str(rows[0]) + ' players registered --!!'
 
 
-def registerPlayer(name):
+def registerPlayer(tournament_code, name):
     """Adds a player to the tournament database.
   
     The database assigns a unique serial id number for the player.  (This
     should be handled by your SQL database schema, not in your Python code.)
   
     Args:
+      tournament_code: A three character code assigned to each tournament.
       name: the player's full name (need not be unique).
     """
     db = connect()
     db_cursor = db.cursor()
-    query = "INSERT INTO players (name) VALUES (%s)"
-    db_cursor.execute(query, (name,))
+    query = "INSERT INTO players (tournament_code, name) VALUES (%s, %s)"
+    db_cursor.execute(query, (tournament_code, name,))
     db.commit()
     db.close()
+    print '!!-- ' + name + ' registered to tournament: ' + tournament_code + ' --!!'
 
 
 def playerStandings():
@@ -80,7 +93,7 @@ def playerStandings():
     """
     db = connect()
     db_cursor = db.cursor()
-    query = "SELECT * FROM v_standings"
+    query = "SELECT * FROM v_wins"
     db_cursor.execute(query)
     standings = db_cursor.fetchall()
     db.close()
@@ -89,29 +102,33 @@ def playerStandings():
     
 
 
-def reportMatch(player, opponent, result):
+def reportMatch(tournament_code, player, opponent, result):
     """Records the outcome of a single match between two players.
 
+    reportMatch() will also report the results for the opponent into the matches table.
+
     Args:
-      player:  the id number of the first player
-      opponent:  the id number of the player's opponent
-      result: the result of the match. Must be 'win', 'lose', or 'tie'
+      tournament_code:  A three character code assigned to each tournament.
+               player:  The id number of the first playerselfself.
+             opponent:  The id number of the player's opponent.
+               result:  The result of the match. Must be 'win', 'lose', or 'tie'.
     """
     db = connect()
     db_cursor = db.cursor()
-    query = "INSERT INTO matches (playerID, opponentID, result) VALUES (%s, %s, %s)"
-    db_cursor.execute(query, (player, opponent, result))
-    
+    query = "INSERT INTO matches (tournament_code, player_id, opponent_id, result) VALUES (%s, %s, %s, %s)"
+    db_cursor.execute(query, (tournament_code, player, opponent, result))
+    print '!!-- Player ID: ' + str(player) + ' played ' + str(opponent) + ' in Tournament: ' + tournament_code + ' | Result: ' + result + ' --!!'
     if result == 'win':
-        db_cursor.execute(query, (opponent, player, 'lose'))
+        db_cursor.execute(query, (tournament_code, opponent, player, 'lose'))
+        print '!!-- Player ID: ' + str(opponent) + ' played ' + str(player)  + ' in Tournament: ' + tournament_code + ' | Result: Lose --!!'
     elif result == 'lose':
-        db_cursor.execute(query, (opponent, player, 'win'))
+        db_cursor.execute(query, (tournament_code, opponent, player, 'win'))
+        print '!!-- Player ID: ' + str(opponent) + ' played ' + str(player)  + ' in Tournament: ' + tournament_code + ' | Result: Win --!!'
     else:
-        db_cursor.execute(query, (opponent, player, 'tie'))
-
+        db_cursor.execute(query, (tournament_code, opponent, player, 'tie'))
+        print '!!-- Player ID: ' + str(opponent) + ' played ' + str(player)  + ' in Tournament: ' + tournament_code + ' | Result: Tie --!!'
     db.commit()
     db.close()
-    print '!!-- reportMatch ran --!!'
 
  
  
@@ -154,4 +171,7 @@ def swissPairings():
 
 
 
+registerPlayer('WOW', 'New Guy', )
+registerPlayer('WOW', 'Old Guy')
+reportMatch('WOW', 5, 6, 'win')
 
