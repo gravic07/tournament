@@ -108,10 +108,18 @@ CREATE VIEW v_results AS (
 		I thought I had the 0s working previously using COALESCE(count( *column* ), 0)
 */
 CREATE VIEW v_wins AS (
-	SELECT players.id AS player, players.name AS name, count(matches.result) AS wins
-	FROM players LEFT OUTER JOIN matches ON players.id = matches.player_id
-	WHERE matches.result = 'win'
-	GROUP BY players.id
+	SELECT players.id AS player_id, players.name AS player_name, COALESCE(missing_zeros.wins, 0) AS wins
+	-- FROM players LEFT OUTER JOIN v_results ON players.id = v_results.player_id
+	FROM players LEFT OUTER JOIN (
+		SELECT players.id AS player_id, players.name AS player_name, count(v_results.result) AS wins
+		FROM players LEFT OUTER JOIN v_results ON players.id = v_results.player_id
+		WHERE v_results.result = 'win'
+		GROUP BY players.id, players.name
+		ORDER BY wins DESC
+		) AS missing_zeros ON players.id = missing_zeros.player_id
+	-- Use subquery FROM (SELECT * FROM table1) AS alias_name
+	GROUP BY players.id, players.name, missing_zeros.wins
+	-- v_results.player_id, v_results.player_name
 	ORDER BY wins DESC
 );
 
