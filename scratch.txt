@@ -35,3 +35,16 @@ CREATE VIEW v_updatedMatches AS
 	SELECT v_matchPlayer.m_id AS matchID, v_matchPlayer.name AS player, v_matchOpponent.name AS opponent, v_matchPlayer.result
 	FROM v_matchPlayer INNER JOIN v_matchOpponent ON v_matchPlayer.m_id = v_matchOpponent.m_id;
 '''
+
+
+
+players = db_cursor.fetchall()
+
+num_players = len(players)
+i = 0
+pairings = []
+while i < num_players:
+		match = players[i] + players[i+1]
+		pairings += (match,)
+		i = i + 2
+db.close()

@@ -13,7 +13,7 @@ CREATE DATABASE tournament;
 \c tournament;
 
 /* Evaluating use without this check in place
--- Create tournament 
+-- Create tournament
 CREATE TABLE tournament_log (
 	  tournament_id   serial PRIMARY KEY,
 	tournament_code   varchar(3),
@@ -97,7 +97,7 @@ CREATE VIEW v_namingPlayers AS (
 		matches.opponent_id AS opponent_id,
 		matches.result AS result
 	FROM matches LEFT OUTER JOIN players ON matches.player_id = players.id
-	GROUP BY 
+	GROUP BY
 		matches.entry,
 		players.name
 	ORDER BY matches.entry
@@ -127,7 +127,9 @@ CREATE VIEW v_results AS (
 		v_namingPlayers.opponent_id,
 		players.name,
 		v_namingPlayers.result
-	ORDER BY v_namingPlayers.entry
+	-- Ordering by name to help thinks...
+	-- ORDER BY v_namingPlayers.entry
+	ORDER BY player_name
 );
 
 
@@ -137,8 +139,8 @@ CREATE VIEW v_results AS (
 */
 CREATE VIEW v_wins AS (
 	SELECT
-		players.id AS player_id,
-		players.name AS player_name,
+		players.id AS id,
+		players.name AS name,
 		COALESCE(missing_zeros.wins, 0) AS wins
 	FROM players LEFT OUTER JOIN (
 	-- Using sub query to join the player list with a win count
@@ -158,7 +160,64 @@ CREATE VIEW v_wins AS (
 	ORDER BY wins DESC
 );
 
-/*	v_OMW needs to display a table with player's ID, player's name, number of wins, and Opponent Match Wins
+
+CREATE VIEW v_omw AS (
+	SELECT
+	 	v_results.player_id AS id,
+		v_results.player_name AS name,
+		sum(v_wins.wins) as omw
+	FROM v_results LEFT OUTER JOIN v_wins
+	ON v_results.opponent_id = v_wins.id
+	GROUP BY v_results.player_id, v_results.player_name
+);
+
+
+CREATE VIEW v_standings AS (
+	SELECT
+		v_wins.*,
+		v_omw.omw AS omw
+	FROM v_wins LEFT OUTER JOIN v_omw
+	ON v_wins.id = v_omw.id
+	ORDER BY v_wins.wins DESC, v_omw.omw DESC
+);
+
+
+
+
+
+
+
+
+
+	/*
+
+SELECT
+	players.id AS id,
+	players.name AS name,
+	sum(v_OMW.wins) AS OMW
+FROM players LEFT OUTER JOIN (
+	SELECT
+		v_results.player_id AS player_id,
+		v_results.opponent_id AS opp_id,
+		v_results.opponent_name AS opp_name,
+		sum(v_wins.wins) AS wins
+	FROM
+		v_results LEFT OUTER JOIN v_wins ON v_results.opponent_id = v_wins.player_id
+	GROUP BY v_results.player_id;
+	) AS v_OMW ON players.id = v_OMW.player_id;
+
+-- Create standings and then create view that limits to .5 of the count of rows!
+-- accept tournament as argument to sort as well
+-- I will need players.id, players.name, players.tournament_code, wins, OMW
+
+
+
+CREATE VIEW v_standings AS (
+	SELECT
+);
+
+
+	v_OMW needs to display a table with player's ID, player's name, number of wins, and Opponent Match Wins
 	NOTES:
 		Gotta love Google:
 				CREATE VIEW cumPoints AS
@@ -185,12 +244,22 @@ CREATE VIEW v_wins AS (
 
 		I am not sure how to populate for every player.
 		The above psql statement seems like it will only work for one player at a time.
-		
+
+
+SELECT * FROM v_wins WHERE player_id = 1;
+
+
 CREATE VIEW v_OMW AS (
-	SELECT
+	SELECT player_id, player_name, count(v_wins)
 
+		(SELECT v_results.opponent_id,
+			WHERE v_results.opponent_id = 	opponent_name FROM v_results WHERE player_id = 1;
+
+			CASE players.id
+			    WHEN v_results.player_id THEN
+
+			    ELSE
+			        msg := 'other value than one or two';
+			END CASE;
 );
-
 */
-
-

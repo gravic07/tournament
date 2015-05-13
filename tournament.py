@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# 
+#
 # tournament.py -- implementation of a Swiss-system tournament
 #
 
@@ -12,6 +12,7 @@ def connect():
     return psycopg2.connect("dbname=tournament")
 
 
+# DONE
 def deleteTournaments():
     """Removes all tournaments."""
     db = connect()
@@ -22,6 +23,7 @@ def deleteTournaments():
     db.close()
 
 
+# DONE
 def deleteMatches():
     """Remove all the match records from the database."""
     db = connect()
@@ -32,9 +34,10 @@ def deleteMatches():
     db.close()
 
 
+# DONE
 def deletePlayers():
     """Remove all the player records from the database.
-    
+
     Issues:
       Currently deletes matches as well do to coloumn constraint 'ON DELETE CASCADE'
     """
@@ -46,6 +49,7 @@ def deletePlayers():
     db.close()
 
 
+# DONE
 def countPlayers():
     """Returns the number of players currently registered."""
     db = connect()
@@ -59,12 +63,13 @@ def countPlayers():
     print '!!-- There are ' + str(rows[0]) + ' players registered --!!'
 
 
+# DONE
 def registerPlayer(tournament_code, name):
     """Adds a player to the tournament database.
-  
+
     The database assigns a unique serial id number for the player.  (This
     should be handled by your SQL database schema, not in your Python code.)
-  
+
     Args:
       tournament_code: A three character code assigned to each tournament.
       name: the player's full name (need not be unique).
@@ -78,6 +83,7 @@ def registerPlayer(tournament_code, name):
     print '!!-- ' + name + ' registered to tournament: ' + tournament_code + ' --!!'
 
 
+# DONE
 def playerStandings():
     """Returns a list of the players and their win records, sorted by wins.
 
@@ -99,9 +105,9 @@ def playerStandings():
     db.close()
     return standings
     print '!!-- playerStandings ran --!!'
-    
 
 
+# DONE
 def reportMatch(tournament_code, player, opponent, result):
     """Records the outcome of a single match between two players.
 
@@ -130,18 +136,18 @@ def reportMatch(tournament_code, player, opponent, result):
     db.commit()
     db.close()
 
- 
- 
+
+
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
-  
+
     Assuming that there are an even number of players registered, each player
     appears exactly once in the pairings.  Each player is paired with another
     player with an equal or nearly-equal win record, that is, a player adjacent
     to him or her in the standings.
 
     prevent rematches between players
-  
+
     Returns:
       A list of tuples, each of which contains (id1, name1, id2, name2)
         id1: the first player's unique id
@@ -153,25 +159,17 @@ def swissPairings():
     db_cursor = db.cursor()
     query = "SELECT id, name FROM v_standings"
     db_cursor.execute(query)
-    players = db_cursor.fetchall()
 
-    num_players = len(players)
-    i = 0
-    pairings = []
-    while i < num_players:
-        match = players[i] + players[i+1]
-        pairings += (match,)
-        i = i + 2
-    db.close()
+
+
     return pairings
     print '!!-- swissPairings ran --!!'
 
 
-    
+
 
 
 
 registerPlayer('WOW', 'New Guy', )
 registerPlayer('WOW', 'Old Guy')
 reportMatch('WOW', 5, 6, 'win')
-
