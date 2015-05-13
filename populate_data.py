@@ -126,7 +126,7 @@ def runTheSwiss(pair_results):
         'lose',
         'tie'
     ]
-    
+
     pairings = len(pair_results)
     x = 0
     while x < (pairings * 2):
@@ -150,7 +150,7 @@ def runTheSwiss(pair_results):
     else:
         print '!!-- Round Complete --!!'
 
-            
+
 
 
 

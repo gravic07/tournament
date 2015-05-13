@@ -13,17 +13,6 @@ def connect():
 
 
 # DONE
-def deleteTournaments():
-    """Removes all tournaments."""
-    db = connect()
-    db_cursor = db.cursor()
-    query = "DELETE FROM matches"
-    db_cursor.execute(query)
-    db.commit()
-    db.close()
-
-
-# DONE
 def deleteMatches():
     """Remove all the match records from the database."""
     db = connect()
@@ -32,6 +21,7 @@ def deleteMatches():
     db_cursor.execute(query)
     db.commit()
     db.close()
+    print '==>  All matches were deleted successfully.'
 
 
 # DONE
@@ -47,24 +37,25 @@ def deletePlayers():
     db_cursor.execute(query)
     db.commit()
     db.close()
+    print '==>  All players were deleted successfully.'
 
 
 # DONE
-def countPlayers():
+def countPlayers(tournament):
     """Returns the number of players currently registered."""
     db = connect()
     db_cursor = db.cursor()
-    query = "SELECT count(*) FROM players"
-    db_cursor.execute(query)
+    query = "SELECT count(*) FROM players WHERE tournament_code = %s"
+    db_cursor.execute(query, (tournament,))
     rows = db_cursor.fetchone()
     db.commit()
     db.close()
     return rows[0]
-    print '!!-- There are ' + str(rows[0]) + ' players registered --!!'
+    print '==>  ' + str(rows[0]) + 'players are registered for tournament ' + tournament
 
 
 # DONE
-def registerPlayer(tournament_code, name):
+def registerPlayer(tournament, name):
     """Adds a player to the tournament database.
 
     The database assigns a unique serial id number for the player.  (This
@@ -77,10 +68,19 @@ def registerPlayer(tournament_code, name):
     db = connect()
     db_cursor = db.cursor()
     query = "INSERT INTO players (tournament_code, name) VALUES (%s, %s)"
-    db_cursor.execute(query, (tournament_code, name,))
+    # Try to register player 100 times. Incase serial generated id == previously entered user id
+    for i in range(1, 100):
+        try:
+            db_cursor.execute(query, (tournament, name,))
+            break
+        except psycopg2.IntegrityError:
+            # If error from duplicate id is thrown, roll back changes.
+            db_cursor.execute('''ROLLBACK''')
+    else:
+        print 'We tried 100 times to enter register the player and a unique id could not be assigned.  Run registerPlayer(tournament) again to try 100 more times.'
     db.commit()
     db.close()
-    print '!!-- ' + name + ' registered to tournament: ' + tournament_code + ' --!!'
+    print '==>  ' + name + ' has been registered for tournament: ' + tournament
 
 
 # DONE
@@ -99,12 +99,13 @@ def playerStandings():
     """
     db = connect()
     db_cursor = db.cursor()
-    query = "SELECT * FROM v_wins"
+    query = "SELECT * FROM playerStandings"
     db_cursor.execute(query)
     standings = db_cursor.fetchall()
     db.close()
     return standings
-    print '!!-- playerStandings ran --!!'
+    print '==>  Player standings compiled successfully.'
+
 
 
 # DONE
@@ -123,22 +124,21 @@ def reportMatch(tournament_code, player, opponent, result):
     db_cursor = db.cursor()
     query = "INSERT INTO matches (tournament_code, player_id, opponent_id, result) VALUES (%s, %s, %s, %s)"
     db_cursor.execute(query, (tournament_code, player, opponent, result))
-    print '!!-- Player ID: ' + str(player) + ' played ' + str(opponent) + ' in Tournament: ' + tournament_code + ' | Result: ' + result + ' --!!'
+    print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: %s' % (str(player), str(opponent), tournament_code, result)
     if result == 'win':
         db_cursor.execute(query, (tournament_code, opponent, player, 'lose'))
-        print '!!-- Player ID: ' + str(opponent) + ' played ' + str(player)  + ' in Tournament: ' + tournament_code + ' | Result: Lose --!!'
+        print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: lose' % (str(opponent), str(player), tournament_code)
     elif result == 'lose':
+        print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: win' % (str(opponent), str(player), tournament_code)
         db_cursor.execute(query, (tournament_code, opponent, player, 'win'))
-        print '!!-- Player ID: ' + str(opponent) + ' played ' + str(player)  + ' in Tournament: ' + tournament_code + ' | Result: Win --!!'
     else:
         db_cursor.execute(query, (tournament_code, opponent, player, 'tie'))
-        print '!!-- Player ID: ' + str(opponent) + ' played ' + str(player)  + ' in Tournament: ' + tournament_code + ' | Result: Tie --!!'
+        print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: tie' % (str(opponent), str(player), tournament_code)
     db.commit()
     db.close()
 
 
-
-def swissPairings():
+def swissPairings(tournament):
     """Returns a list of pairs of players for the next round of a match.
 
     Assuming that there are an even number of players registered, each player
@@ -146,30 +146,43 @@ def swissPairings():
     player with an equal or nearly-equal win record, that is, a player adjacent
     to him or her in the standings.
 
-    prevent rematches between players
+    NEED TO:
+        prevent rematches between players
 
     Returns:
-      A list of tuples, each of which contains (id1, name1, id2, name2)
-        id1: the first player's unique id
-        name1: the first player's name
-        id2: the second player's unique id
-        name2: the second player's name
+        A list of tuples, each of which contains (id1, name1, id2, name2)
+            id1: the first player's unique id
+            name1: the first player's name
+            id2: the second player's unique id
+            name2: the second player's name
     """
     db = connect()
     db_cursor = db.cursor()
-    query = "SELECT id, name FROM v_standings"
-    db_cursor.execute(query)
+    query = "SELECT id, name FROM v_standings WHERE tournament = %s"
+    db_cursor.execute(query, (tournament,))
+    players = db_cursor.fetchall()
+    db.close()
 
 
-
+    num_players = len(players)
+    i = 0
+    pairings = []
+    while i < num_players:
+    		match = players[i] + players[i+1]
+    		pairings += (match,)
+    		i = i + 2
     return pairings
-    print '!!-- swissPairings ran --!!'
+    print '==>  Swiss pairings compiled successfully.'
 
 
 
 
 
 
+
+'''
 registerPlayer('WOW', 'New Guy', )
 registerPlayer('WOW', 'Old Guy')
 reportMatch('WOW', 5, 6, 'win')
+print swissPairings('ABC')
+'''
