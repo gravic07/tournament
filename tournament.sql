@@ -240,7 +240,7 @@ CREATE VIEW v_standings AS (
     				ORDER BY player;
 		The following psql command returns a list of opponent IDs and names:
 			SELECT opponent_id, opponent_name FROM v_results WHERE player_id = 1;
-		It now needs to be combined with v_wins to get the opponents OMW?
+		It now needs to be combined with v_wins to get the opponents OMW by adding sum(wins)
 
 		I am not sure how to populate for every player.
 		The above psql statement seems like it will only work for one player at a time.
