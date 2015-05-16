@@ -5,163 +5,88 @@ import itertools
 
 from tournament import connect
 from tournament import reportMatch
+from tournament import swissPairings
 
 from tournament_test import testDelete
 
-
-the_players = [
-	(1, 'Jeff'),
-	(2, 'Adarsh'),
-	(3, 'Amanda'),
-	(4, 'Eduardo'),
-	(5, 'Philip'),
-	(6, 'Jee')
+# You can add players to the list below in the form of (tournament, player id, player name)
+thePlayers = [
+	('WOW', 101, 'New Guy'),
+	('WOW', 102, 'Old Guy'),
+	('WOW', 103, 'Rich Guy'),
+	('WOW', 104, 'Poor Guy'),
+	('WOW', 105, 'Tall Guy'),
+	('WOW', 106, 'Short Guy'),
+	('WOW', 107, 'Small Guy'),
+	('WOW', 108, 'Big Guy'),
+	('WOW', 109, 'Good Guy'),
+	('WOW', 110, 'Bad Guy')
 ]
 
-the_results = [
+theResults = [
 	'win',
 	'lose',
 	'tie'
 ]
 
 
-def registerPlayerUpdated(player_id, name):
-	"""Add a player to the tournament database.
+def registerPlayerUpdated(tournament, id, name):
+    """Add a player to the tournament database.
 
-	The database assigns a unique serial id number for the player.  (This
-	should be handled by your SQL database schema, not in your Python code.)
+	This calls registerPlayer and adds the ability to set the players ID.
 
-	Args:
-	  name: the player's full name (need not be unique).
-	"""
-	db = connect()
-	db_cursor = db.cursor()
-	query = "INSERT INTO players (id, name) VALUES (%s, %s)"
-	db_cursor.execute(query, (player_id, name))
-	db.commit()
-	db.close()
-
-
-def createRandomMatches(player_list, rounds):
-	num_players = len(player_list)
-	for i in xrange(rounds):
-		print 'round %d' % (i+1)
-
-		i = 0;
-		while i < num_players:
-			result = random.choice(the_results)
-			player_id = player_list[i][0]
-			player_name = player_list[i][1]
-			opponent_id = player_list[i+1][0]
-			opponent_name = player_list[i+1][1]
-			reportMatch(player_id, opponent_id, result)
-			print "%s (id=%s) vs. %s (id=%s) ... %s %ss." % (
-				player_name,
-				player_id,
-				opponent_name,
-				opponent_id,
-				player_name,
-				result)
-			i = i + 2
-
-
-
-
-def setup_players_and_matches():
-	'''
-	'''
-	testDelete()
-	for player in the_players:
-		registerPlayerUpdated(player[0], player[1])
-
-	createRandomMatches(the_players, 1)
-
-
-
-
-
-
-def reorderPlayers(swissPairing):
-    '''
+    Args:
+      tournament:  A three character code assigned to each tournament.
+			  id:  Establish the ID for player.  This NEEDS to be a unique value.
+            name:  The player's full name.  This does not need to be a uniue value.
+    """
     db = connect()
     db_cursor = db.cursor()
-    query = "SELECT id, name FROM v_standings"
-    db_cursor.execute(query)
-    players = db_cursor.fetchall()
-    print players
-    '''
-    num_pairings = len(swissPairing)
-    newPlayers = []
-    i = 0
-    while i < num_pairings:
-        player1_id = swissPairing[i][0]
-        player1_name = swissPairing[i][1]
-        player2_id = swissPairing[i][2]
-        player2_name = swissPairing[i][3]
-        newPlayers += [(player1_id, player1_name)]
-        newPlayers += [(player2_id, player2_name)]
-        i += 1
-    newPlayers.insert(0, newPlayers.pop())
-
-    num_players = len(newPlayers)
-    newPairings = []
-    i = 0
-    while i < num_players:
-        match = newPlayers[i] + newPlayers[i+1]
-        newPairings += (match,)
-        i += 2
-    return newPairings
-    print '!!-- reorderPlayers ran --!!'
+    query = "INSERT INTO players (tournament, id, name) VALUES (%s, %s, %s)"
+    db_cursor.execute(query, (tournament, id, name,))
+    print '==>  ' + name + ' has been registered for tournament: ' + tournament
+    db.commit()
+    db.close()
 
 
+def signUps(listOfPlayers):
+    """Register a list of players to their individually assigned tournament.
 
-def runTheSwiss(pair_results):
-    '''Plays the matches recomended by swissPairings()
+    """
+    for player in listOfPlayers:
+        registerPlayerUpdated(player[0], player[1], player[2],)
+        print '==>  ' + player[2] + ' registered to tournament ' + player[0] + '.'
 
-    Runs reportMatch() on the pairs that are suggested from swissPairings()
-    The result of the match is determined by using random(choice) on a list of the potential outcomes.
-    '''
-    the_results = [
-        'win',
-        'lose',
-        'tie'
-    ]
 
-    pairings = len(pair_results)
-    x = 0
-    while x < (pairings * 2):
-        try:
-            for i in range(pairings):
-                playerID = pair_results[i][0]
-                opponentID = pair_results[i][2]
-                result = random.choice(the_results)
-                '''
-                BUG: Right now this is reporting match individually.
-                     I would like for all 3 of the reportMatch()s to be tried before commiting it to the DB.
-                '''
-                reportMatch(playerID, opponentID, result)
-                x = (pairings * 2) + 1
-        except psycopg2.IntegrityError:
-            print 'RE-RUN # %d!!!' % (x+1)
-            pair_results = reorderPlayers(pair_results)
-            x += 1
-    if x == (pairings * 2):
-        print 'Everyone has played everyone...'
-    else:
-        print '!!-- Round Complete --!!'
+def roundOfSwiss(tournament):
+    """Execute a round of the Swiss Tournament
+
+	Args:
+	  tournament:
+
+    """
+    matches = swissPairings(tournament)
+    for match in matches:
+        result = random.choice(theResults)
+        reportMatch(tournament, match[0], match[2], result)
+    print '==>  Round of Swiss complete!'
+
+# Delete Players and matches
+testDelete()
+
+# Register a list of players.
+signUps(thePlayers)
+
+# Player some rounds using the Swiss Tournament system
+roundOfSwiss('WOW')
+roundOfSwiss('WOW')
+roundOfSwiss('WOW')
+roundOfSwiss('WOW')
 
 
 
 
-
-
-runTheSwiss(swissPairings())
-
-
-
-
-
-
-
+'''
 if __name__ == '__main__':
-	setup_players_and_matches()
+	#final function to run
+'''
