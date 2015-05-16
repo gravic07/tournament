@@ -16,18 +16,18 @@ CREATE DATABASE tournament;
 -- Create tournament
 CREATE TABLE tournament_log (
 	  tournament_id   serial PRIMARY KEY,
-	tournament_code   varchar(3),
-			 UNIQUE   (tournament_code)
+	tournament   varchar(3),
+			 UNIQUE   (tournament)
 );
 
-INSERT INTO tournament_log (tournament_code) VALUES ('ABC');
-INSERT INTO tournament_log (tournament_code) VALUES ('XYZ');
+INSERT INTO tournament_log (tournament) VALUES ('ABC');
+INSERT INTO tournament_log (tournament) VALUES ('XYZ');
 */
 
 
 -- Create some tables.
 CREATE TABLE players (
-	tournament_code   varchar(3),
+	tournament   varchar(3),
 			       name   text,
 	  		       id   serial PRIMARY KEY,
 	  		   UNIQUE   (id)
@@ -35,16 +35,16 @@ CREATE TABLE players (
 
 
 -- Inserting 4 players into the ABC tournament
-INSERT INTO players VALUES ('ABC', 'John Doe', 1);
-INSERT INTO players VALUES ('ABC', 'Jim Doe', 2);
-INSERT INTO players VALUES ('ABC', 'Joe Doe', 3);
-INSERT INTO players VALUES ('ABC', 'Juan Doe', 4);
+-- INSERT INTO players VALUES ('ABC', 'John Doe', 1);
+-- INSERT INTO players VALUES ('ABC', 'Jim Doe', 2);
+-- INSERT INTO players VALUES ('ABC', 'Joe Doe', 3);
+-- INSERT INTO players VALUES ('ABC', 'Juan Doe', 4);
 
 -- Inserting 4 players into the XYZ tournament
-INSERT INTO players VALUES ('XYZ', 'Mike Smith', 11);
-INSERT INTO players VALUES ('XYZ', 'Mark Smith', 12);
-INSERT INTO players VALUES ('XYZ', 'Mitch Smith', 13);
-INSERT INTO players VALUES ('XYZ', 'Matt Smith', 14);
+-- INSERT INTO players VALUES ('XYZ', 'Mike Smith', 11);
+-- INSERT INTO players VALUES ('XYZ', 'Mark Smith', 12);
+-- INSERT INTO players VALUES ('XYZ', 'Mitch Smith', 13);
+-- INSERT INTO players VALUES ('XYZ', 'Matt Smith', 14);
 
 
 
@@ -52,7 +52,7 @@ INSERT INTO players VALUES ('XYZ', 'Matt Smith', 14);
 
 -- Creating matches table consisting of tournament code, player's ID, opponent's ID, match result, and entry number
 CREATE TABLE matches (
-	tournament_code   varchar(3),
+	tournament   varchar(3),
 	      player_id   integer REFERENCES players (id) ON DELETE CASCADE,
 	   	opponent_id   integer REFERENCES players (id) ON DELETE CASCADE,
 		     	 result   text CHECK (result IN ('win', 'lose', 'tie')),
@@ -62,21 +62,21 @@ CREATE TABLE matches (
 
 
 -- Insert two matches in tournament ABC
-INSERT INTO matches VALUES ('ABC', 1, 2, 'win');
-INSERT INTO matches VALUES ('ABC', 2, 1, 'lose');
-INSERT INTO matches VALUES ('ABC', 3, 4, 'lose');
-INSERT INTO matches VALUES ('ABC', 4, 3, 'win');
+-- INSERT INTO matches VALUES ('ABC', 1, 2, 'win');
+-- INSERT INTO matches VALUES ('ABC', 2, 1, 'lose');
+-- INSERT INTO matches VALUES ('ABC', 3, 4, 'lose');
+-- INSERT INTO matches VALUES ('ABC', 4, 3, 'win');
 
-INSERT INTO matches VALUES ('ABC', 1, 4, 'win');
-INSERT INTO matches VALUES ('ABC', 4, 1, 'lose');
-INSERT INTO matches VALUES ('ABC', 2, 3, 'lose');
-INSERT INTO matches VALUES ('ABC', 3, 2, 'win');
+-- INSERT INTO matches VALUES ('ABC', 1, 4, 'win');
+-- INSERT INTO matches VALUES ('ABC', 4, 1, 'lose');
+-- INSERT INTO matches VALUES ('ABC', 2, 3, 'lose');
+-- INSERT INTO matches VALUES ('ABC', 3, 2, 'win');
 
 -- Insert two matches in tournament XYZ
-INSERT INTO matches VALUES ('XYZ', 11, 12, 'tie');
-INSERT INTO matches VALUES ('XYZ', 12, 11, 'tie');
-INSERT INTO matches VALUES ('XYZ', 13, 14, 'win');
-INSERT INTO matches VALUES ('XYZ', 14, 13, 'lose');
+-- INSERT INTO matches VALUES ('XYZ', 11, 12, 'tie');
+-- INSERT INTO matches VALUES ('XYZ', 12, 11, 'tie');
+-- INSERT INTO matches VALUES ('XYZ', 13, 14, 'win');
+-- INSERT INTO matches VALUES ('XYZ', 14, 13, 'lose');
 
 
 
@@ -91,7 +91,7 @@ INSERT INTO matches VALUES ('XYZ', 14, 13, 'lose');
 CREATE VIEW v_namingPlayers AS (
 	SELECT
 		matches.entry AS entry,
-		matches.tournament_code AS tournament,
+		matches.tournament AS tournament,
 		matches.player_id AS player_id,
 		players.name AS player_name,
 		matches.opponent_id AS opponent_id,
@@ -167,7 +167,7 @@ CREATE VIEW playerStandings AS (
 	FROM v_wins LEFT OUTER JOIN matches
 	ON v_wins.id = matches.player_id
 	GROUP BY v_wins.id, v_wins.name, v_wins.wins
-	ORDER BY v_wins.wins
+	ORDER BY v_wins.wins DESC
 );
 
 CREATE VIEW v_omw AS (
@@ -186,7 +186,7 @@ CREATE VIEW v_standings AS (
 	SELECT
 		players.id AS id,
 		players.name AS name,
-		players.tournament_code AS tournament,
+		players.tournament AS tournament,
 		wins_omw.wins AS wins,
 		wins_omw.omw AS omw
 	FROM players LEFT OUTER JOIN (
@@ -196,7 +196,7 @@ CREATE VIEW v_standings AS (
 			FROM v_wins LEFT OUTER JOIN v_omw
 			ON v_wins.id = v_omw.id
 		) AS wins_omw ON players.id = wins_omw.id
-	GROUP BY players.id, players.name, players.tournament_code, wins_omw.wins, wins_omw.omw
+	GROUP BY players.id, players.name, players.tournament, wins_omw.wins, wins_omw.omw
 	ORDER BY wins_omw.wins DESC, wins_omw.omw DESC
 );
 
