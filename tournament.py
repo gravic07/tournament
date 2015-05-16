@@ -133,8 +133,6 @@ def playerStandings():
     return standings
 
 
-
-# DONE
 def reportMatch(tournament, player, opponent, result):
     """Records the outcome of a single match between two players.
 
