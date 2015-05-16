@@ -4,54 +4,82 @@
 #
 
 import psycopg2
-import random
 
 
 def connect():
-    """Connect to the PostgreSQL database.  Returns a database connection."""
+    """Connect to the PostgreSQL database.
+
+    Returns a database connection.
+    """
     return psycopg2.connect("dbname=tournament")
 
 
-# DONE
-def deleteMatches():
-    """Remove all the match records from the database."""
-    db = connect()
-    db_cursor = db.cursor()
-    query = "DELETE FROM matches"
-    db_cursor.execute(query)
-    db.commit()
-    db.close()
-    print '==>  All matches were deleted successfully.'
+def deleteMatches(tournament='blank'):
+    """Remove all the match records from the database.
 
-
-# DONE
-def deletePlayers():
-    """Remove all the player records from the database.
-
-    Issues:
-      Currently deletes matches as well do to coloumn constraint 'ON DELETE CASCADE'
+    Args:
+      tournament: All the matches in the entered tournament will be deleted.
+      blank: If there is no argument passed, all matches in all tournaments will be deleted.
     """
     db = connect()
     db_cursor = db.cursor()
-    query = "DELETE FROM players"
-    db_cursor.execute(query)
+    if tournament == 'blank':
+        query = "DELETE FROM matches"
+        db_cursor.execute(query)
+        print '==>  All matches were deleted successfully.'
+    else:
+        query = "DELETE FROM matches WHERE tournament_code = %s"
+        db_cursor.execute(query, (tournament,))
+        print '==>  All matches were deleted from ' + tournament + ' successfully.'
     db.commit()
     db.close()
-    print '==>  All players were deleted successfully.'
 
 
-# DONE
-def countPlayers(tournament):
-    """Returns the number of players currently registered."""
+def deletePlayers(player='blank'):
+    """Remove all the player records from the database.
+
+    When player ID is deleted, all match records for that ID are also deleted.
+
+    Args:
+      player: This is the ID of the player to be deleted.
+      blank: If there is no argument passed, all players will be deleted.
+    """
     db = connect()
     db_cursor = db.cursor()
-    query = "SELECT count(*) FROM players WHERE tournament_code = %s"
-    db_cursor.execute(query, (tournament,))
-    rows = db_cursor.fetchone()
+    if player == 'blank':
+        query = "DELETE FROM players"
+        db_cursor.execute(query)
+        print '==>  All players were deleted successfully.'
+    else:
+        query = "DELETE FROM players WHERE id = %s"
+        db_cursor.execute(query, (player))
+        print '==>  Player ID: ' + player + ' deleted.'
+    db.commit()
+    db.close()
+
+
+def countPlayers(tournament='blank'):
+    """Returns the number of players currently registered.
+
+    Args:
+      tournament: The number of players in the passed tournament code will be counted.
+      blank: If there is no argument passed, all players in all tournaments will be counted.
+    """
+    db = connect()
+    db_cursor = db.cursor()
+    if tournament == 'blank':
+        query = "SELECT count(*) FROM players"
+        db_cursor.execute(query)
+        rows = db_cursor.fetchone()
+        print '==>  ' + str(rows[0]) + ' players are registered for all tournaments.'
+    else:
+        query = "SELECT count(*) FROM players WHERE tournament_code = %s"
+        db_cursor.execute(query, (tournament,))
+        rows = db_cursor.fetchone()
+        print '==>  ' + str(rows[0]) + ' players are registered for tournament ' + tournament + '.'
     db.commit()
     db.close()
     return rows[0]
-    print '==>  ' + str(rows[0]) + 'players are registered for tournament ' + tournament
 
 
 # DONE
@@ -75,7 +103,7 @@ def registerPlayer(tournament, name):
             break
         except psycopg2.IntegrityError:
             # If error from duplicate id is thrown, roll back changes.
-            db_cursor.execute('''ROLLBACK''')
+            db_cursor.rollback()
     else:
         print 'We tried 100 times to enter register the player and a unique id could not be assigned.  Run registerPlayer(tournament) again to try 100 more times.'
     db.commit()
@@ -162,6 +190,72 @@ def swissPairings(tournament):
     db_cursor.execute(query, (tournament,))
     players = db_cursor.fetchall()
     db.close()
+    z_pairings = []
+    opponent = []
+    played = []
+    num = len(players)
+    while num > 1:
+        player = players[0]
+        db = connect()
+        db_cursor = db.cursor()
+        query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.tournament = %s AND waldo.played IS NULL AND waldo.id <> %s"
+        db_cursor.execute(query, (str(player[0]), tournament, str(player[0])))
+        opponent_list = db_cursor.fetchall()
+        opponent_list = [x for x in opponent_list if x not in played]
+        try:
+            opponent = opponent_list[0]
+            print 'Player ID: ' + str(player) + ' ... vs ... Player ID: ' + str(opponent)
+            match = player + opponent
+            z_pairings += (match,)
+            played += (player, opponent)
+            players = [x for x in players if x not in (player, opponent)]
+            num = len(players)
+        except:
+            print 'Player ID: ' + str(player) + ' has played all opponents in Tournament: ' + tournament
+            print 'Aborting roundOfSwiss().'
+            print 'All matches to this point have been committed to the database.'
+            break
+    db.rollback()
+    db.close()
+    print '<::: Swiss Pairs :::>'
+    return z_pairings
+
+countPlayers()
+
+
+
+'''
+
+
+
+
+
+
+
+    db = connect()
+    db_cursor = db.cursor()
+    query = "SELECT id FROM v_standings WHERE tournament = %s"
+    db_cursor.execute(query, (tournament,))
+    players = db_cursor.fetchall()
+    db.close()
+    z_pairing = []
+    WHILE len(players) > 1:
+        player = players[0]
+
+        db = connect()
+        db_cursor = db.cursor()
+        query = "SELECT v_results.tournament AS tournament, v_results.player_id AS player_id, v_results.opponent_id AS opponent_id, v_standings.wins AS opp_wins, v_standings.omw AS opp_omw FROM v_results LEFT OUTER JOIN v_standings ON v_results.opponent_id = v_standings.id WHERE v_results.tournament = %s AND v_results.player_id <> %d AND v_results.opponent_id <> %d"
+        db_cursor.execute(query, (tournament, player, player))
+        opponent_list = db_cursor.fetchall()
+        db.close()
+
+        opponent = opponent_list[0]
+        match = player + opponent
+        z_pairing += (match,)
+        players.remove(player)
+        players.remove(opponent)
+
+
 
 
     num_players = len(players)
@@ -180,7 +274,8 @@ def swissPairings(tournament):
 
 
 
-'''
+
+
 registerPlayer('WOW', 'New Guy', )
 registerPlayer('WOW', 'Old Guy')
 reportMatch('WOW', 5, 6, 'win')

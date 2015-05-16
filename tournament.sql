@@ -53,11 +53,11 @@ INSERT INTO players VALUES ('XYZ', 'Matt Smith', 14);
 -- Creating matches table consisting of tournament code, player's ID, opponent's ID, match result, and entry number
 CREATE TABLE matches (
 	tournament_code   varchar(3),
-	      player_id   integer REFERENCES players (id) ON DELETE RESTRICT,
-	    opponent_id   integer REFERENCES players (id) ON DELETE RESTRICT,
-		     result   text CHECK (result IN ('win', 'lose', 'tie')),
-		      entry   serial PRIMARY KEY,
-		     UNIQUE   (player_id, opponent_id)
+	      player_id   integer REFERENCES players (id) ON DELETE CASCADE,
+	   	opponent_id   integer REFERENCES players (id) ON DELETE CASCADE,
+		     	 result   text CHECK (result IN ('win', 'lose', 'tie')),
+		      	entry   serial PRIMARY KEY,
+		     	 UNIQUE   (player_id, opponent_id)
 );
 
 
@@ -129,7 +129,7 @@ CREATE VIEW v_results AS (
 		v_namingPlayers.result
 	-- Ordering by name to help thinks...
 	-- ORDER BY v_namingPlayers.entry
-	ORDER BY player_name
+	ORDER BY entry
 );
 
 
@@ -198,4 +198,45 @@ CREATE VIEW v_standings AS (
 		) AS wins_omw ON players.id = wins_omw.id
 	GROUP BY players.id, players.name, players.tournament_code, wins_omw.wins, wins_omw.omw
 	ORDER BY wins_omw.wins DESC, wins_omw.omw DESC
+);
+
+
+CREATE VIEW uummm AS (
+	SELECT waldo.id
+	FROM (
+		SELECT
+			v_standings.*,
+			oppid.played
+			FROM v_standings LEFT OUTER JOIN (
+				SELECT
+				v_results.opponent_id AS played
+				FROM v_results
+				WHERE v_results.player_id = 1
+				GROUP BY v_results.opponent_id
+			) AS oppid
+			ON v_standings.id = oppid.played
+		) AS waldo
+		WHERE waldo.tournament = 'ABC' AND waldo.played IS NULL AND waldo.id <> 1
+);
+
+
+/*
+SELECT uummm.id, uummm.name FROM uummm WHERE
+
+	SELECT
+	FROM v_standings LEFT OUTER JOIN v_results ON v_standings.id = v_results.player_id WHERE v_results.player_id = 1 GROUP BY v_standings.id, v_standings.name, v_standings.tournament, v_standings.wins, v_standings.omw, v_results.player_id;
+
+*/
+-- Creating view for Swiss tournament with no rematches.
+-- Columns: player_id, opponent id, opponenets wins and opponents opponenets wins...
+
+CREATE VIEW v_swissOpponents AS (
+	SELECT
+		v_results.tournament AS tournament,
+		v_results.player_id AS player_id,
+		v_results.opponent_id AS opponent_id,
+		v_standings.wins AS opp_wins,
+		v_standings.omw AS opp_omw
+	FROM v_results LEFT OUTER JOIN v_standings ON v_results.opponent_id = v_standings.id
+	WHERE v_results.player_id <> 1 AND v_results.opponent_id <> 1
 );
