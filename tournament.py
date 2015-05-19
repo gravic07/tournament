@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # tournament.py -- implementation of a Swiss-system tournament
-#
+# This file defines multiple Python functions to be used in facilitating
+# a Swiss-system tournament
 
 import psycopg2
 
@@ -15,11 +16,14 @@ def connect():
 
 
 def deleteMatches(tournament='blnk'):
-    """Remove all the match records from the database.
+    """Remove all the match records from an individual or all tournaments
 
-    Args:
-      tournament:  A three character code assigned to each tournament.
-            blnk:  If there is no argument passed, all matches in all tournaments will be deleted.
+    Arguments:
+      tournament:  Optional argument that takes a three character code assigned
+                   to each tournament.  Matches will be deleted for the
+                   tournament code passed.
+            blnk:  If there is no argument passed, all matches in all
+                   tournaments will be deleted.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -36,13 +40,16 @@ def deleteMatches(tournament='blnk'):
 
 
 def deletePlayers(player='blnk'):
-    """Remove all the player records from the database.
+    """Remove an individual player or all players records from the database.
 
-    When player ID is deleted, all match records for that ID are also deleted.
-
-    Args:
-      player:  This is the ID of the player to be deleted.
+    Arguments:
+      player:  Optional argument that takes the ID of a player and deletes the
+               record for that player.
         blnk:  If there is no argument passed, all players will be deleted.
+
+    Side Effects:
+      When a player is deleted, all of the match records for that player are
+      also deleted due to a constraint on the player/opponenet ID columns.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -59,11 +66,17 @@ def deletePlayers(player='blnk'):
 
 
 def countPlayers(tournament='blnk'):
-    """Returns the number of players currently registered.
+    """Returns the number of players registered for a tournament or all tournaments.
 
-    Args:
-      tournament:  A three character code assigned to each tournament.
-            blnk:  If there is no argument passed, all players in all tournaments will be counted.
+    Arguments:
+      tournament:  Optional argument that takes a three character code assigned
+                   to each tournament.  Players will be counted for the
+                   tournament code passed.
+            blnk:  If there is no argument passed, all players in all
+                   tournaments will be counted.
+
+    Returns int representing the number of players in a specified tournament or
+    in all tournaments.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -85,12 +98,16 @@ def countPlayers(tournament='blnk'):
 def registerPlayer(tournament, name):
     """Adds a player to the tournament database.
 
-    Args:
-      tournament:  A three character code assigned to each tournament.
-            name:  The player's full name.  This does not need to be a uniue value
+    Arguments:
+      tournament:  Optional argument that takes a three character code assigned
+                   to each tournament.  Player will be registered to compete in
+                   the tournament passed.
+            name:  The player's full name.  This does not need to be a uniue
+                   value
 
     Notes:
-      The database will automatically assign a unique serial id number for the player.
+      The database will automatically assign a unique serial id number for the
+      player.
     """
     db = connect()
     db_cursor = db.cursor()
