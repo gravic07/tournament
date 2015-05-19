@@ -47,7 +47,7 @@ def deletePlayers(player='blnk'):
     db = connect()
     db_cursor = db.cursor()
     if player == 'blnk':
-        query = "DELETE FROM players"
+        query = "DELETE FROM players where id <> 0"
         db_cursor.execute(query)
         print '==>  All players were deleted successfully.'
     else:
@@ -68,12 +68,12 @@ def countPlayers(tournament='blnk'):
     db = connect()
     db_cursor = db.cursor()
     if tournament == 'blnk':
-        query = "SELECT count(*) FROM players"
+        query = "SELECT count(*) FROM players WHERE id <> 0"
         db_cursor.execute(query)
         rows = db_cursor.fetchone()
         print '==>  ' + str(rows[0]) + ' players are registered for all tournaments.'
     else:
-        query = "SELECT count(*) FROM players WHERE tournament = %s"
+        query = "SELECT count(*) FROM players WHERE tournament = %s, id <> 0"
         db_cursor.execute(query, (tournament,))
         rows = db_cursor.fetchone()
         print '==>  ' + str(rows[0]) + ' players are registered for tournament ' + tournament + '.'
@@ -150,15 +150,16 @@ def reportMatch(tournament, player, opponent, result):
     query = "INSERT INTO matches (tournament, player_id, opponent_id, result) VALUES (%s, %s, %s, %s)"
     db_cursor.execute(query, (tournament, player, opponent, result))
     print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: %s' % (str(player), str(opponent), tournament, result)
-    if result == 'win':
-        db_cursor.execute(query, (tournament, opponent, player, 'lose'))
-        print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: lose' % (str(opponent), str(player), tournament)
-    elif result == 'lose':
-        print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: win' % (str(opponent), str(player), tournament)
-        db_cursor.execute(query, (tournament, opponent, player, 'win'))
-    else:
-        db_cursor.execute(query, (tournament, opponent, player, 'tie'))
-        print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: tie' % (str(opponent), str(player), tournament)
+    if opponent <> 0:
+        if result == 'win':
+            db_cursor.execute(query, (tournament, opponent, player, 'lose'))
+            print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: lose' % (str(opponent), str(player), tournament)
+        elif result == 'lose':
+            print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: win' % (str(opponent), str(player), tournament)
+            db_cursor.execute(query, (tournament, opponent, player, 'win'))
+        else:
+            db_cursor.execute(query, (tournament, opponent, player, 'tie'))
+            print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: tie' % (str(opponent), str(player), tournament)
     db.commit()
     db.close()
 
@@ -186,17 +187,42 @@ def swissPairings(tournament):
     query = "SELECT id, name FROM v_standings WHERE tournament = %s"
     db_cursor.execute(query, (tournament,))
     players = db_cursor.fetchall()
-    db.close()
     z_pairings = []
     opponent = []
     played = []
+    byeRound = []
     num = len(players)
+    if num % 2:
+        # Create a list of player IDs sorted by least wins and then least OMWs
+    	query = "SELECT v_standings.id AS id, v_standings.name AS name FROM v_standings ORDER BY v_standings.wins, v_standings.omw"
+    	db_cursor.execute(query)
+    	losers = db_cursor.fetchall()
+        # Create list of player IDs that have had a bye round already
+    	query = "SELECT player_id AS id, player_name AS name FROM v_results WHERE opponent_id=0 GROUP BY player_id, player_name"
+    	db_cursor.execute(query)
+    	byeAlready = db_cursor.fetchall()
+        # Remove player IDs that have had a bye round from the players
+        # sorted by loses
+    	byeCandidates = [x for x in losers if x not in byeAlready]
+        # Report the bye match as a win for the player
+        print byeCandidates
+        print '^-- byeCandidates'
+        # Shouldn't report match since is only reporting
+        # reportMatch(tournament, byeCandidates[0][0], 0, 'win')
+        # Remove the player select for bye from the list of players for the
+        # Swiss pairings
+        byeRound = [byeCandidates[0], ]
+        print byeRound
+        print '^-- Remove bye'
+        players = [x for x in players if x not in byeRound]
+        print players
+        print '^-- players after removing bye'
     while num > 1:
+        print players
+        print '^-- After eiting the if statement'
         player = players[0]
-        db = connect()
-        db_cursor = db.cursor()
-        query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.tournament = %s AND waldo.played IS NULL AND waldo.id <> %s"
-        db_cursor.execute(query, (str(player[0]), tournament, str(player[0])))
+        query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.tournament =%s AND waldo.played IS NULL AND waldo.id <> %s AND waldo.id <> %s"
+        db_cursor.execute(query, (str(player[0]), tournament, str(player[0]), str(byeRound[0][0])))
         opponent_list = db_cursor.fetchall()
         opponent_list = [x for x in opponent_list if x not in played]
         try:
@@ -212,7 +238,11 @@ def swissPairings(tournament):
             print 'Aborting roundOfSwiss().'
             print 'All matches to this point have been committed to the database.'
             break
+    # print '==> Bye week for ' + byeCandidates[0][1] + ' (ID: ' + byeCandidates[0][1] + ').'
+    for pair in z_pairings:
+        print '==> ' + str(pair) + '/n'
     db.rollback()
     db.close()
-    print '<::: Swiss Pairs :::>'
-    return z_pairings
+    return byeRound + z_pairings
+
+swissPairings('WOW')

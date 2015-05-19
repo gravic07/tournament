@@ -28,10 +28,13 @@ INSERT INTO tournament_log (tournament) VALUES ('XYZ');
 -- Create some tables.
 CREATE TABLE players (
 	tournament   varchar(3),
-			       name   text,
-	  		       id   serial PRIMARY KEY,
-	  		   UNIQUE   (id)
+		  name   text,
+	  		id   serial PRIMARY KEY,
+	  	UNIQUE   (id)
 );
+
+-- Inserting a BYE player to support handling bye rounds
+INSERT INTO players (name, id) VALUES  ('BYE', 0);
 
 
 -- Inserting 4 players into the ABC tournament
@@ -52,12 +55,12 @@ CREATE TABLE players (
 
 -- Creating matches table consisting of tournament code, player's ID, opponent's ID, match result, and entry number
 CREATE TABLE matches (
-	tournament   varchar(3),
-	      player_id   integer REFERENCES players (id) ON DELETE CASCADE,
-	   	opponent_id   integer REFERENCES players (id) ON DELETE CASCADE,
-		     	 result   text CHECK (result IN ('win', 'lose', 'tie')),
-		      	entry   serial PRIMARY KEY,
-		     	 UNIQUE   (player_id, opponent_id)
+	 tournament   varchar(3),
+	  player_id   integer REFERENCES players (id) ON DELETE CASCADE,
+	opponent_id   integer REFERENCES players (id) ON DELETE CASCADE,
+		 result   text CHECK (result IN ('win', 'lose', 'tie')),
+		  entry   serial PRIMARY KEY,
+		 UNIQUE   (player_id, opponent_id)
 );
 
 
@@ -97,6 +100,7 @@ CREATE VIEW v_namingPlayers AS (
 		matches.opponent_id AS opponent_id,
 		matches.result AS result
 	FROM matches LEFT OUTER JOIN players ON matches.player_id = players.id
+	WHERE matches.player_id <> 0
 	GROUP BY
 		matches.entry,
 		players.name
@@ -127,8 +131,6 @@ CREATE VIEW v_results AS (
 		v_namingPlayers.opponent_id,
 		players.name,
 		v_namingPlayers.result
-	-- Ordering by name to help thinks...
-	-- ORDER BY v_namingPlayers.entry
 	ORDER BY entry
 );
 
@@ -153,6 +155,7 @@ CREATE VIEW v_wins AS (
 		GROUP BY players.id, players.name
 		ORDER BY wins DESC
 		) AS missing_zeros ON players.id = missing_zeros.player_id
+	WHERE players.id <> 0
 	GROUP BY
 		players.id,
 		players.name,
@@ -166,6 +169,7 @@ CREATE VIEW playerStandings AS (
 		count(matches.player_id) AS matches
 	FROM v_wins LEFT OUTER JOIN matches
 	ON v_wins.id = matches.player_id
+	WHERE v_wins.id <> 0
 	GROUP BY v_wins.id, v_wins.name, v_wins.wins
 	ORDER BY v_wins.wins DESC
 );
@@ -178,6 +182,7 @@ CREATE VIEW v_omw AS (
 		sum(v_wins.wins) as omw
 	FROM v_results LEFT OUTER JOIN v_wins
 	ON v_results.opponent_id = v_wins.id
+	WHERE v_results.player_id <> 0
 	GROUP BY v_results.player_id, v_results.player_name, v_results.tournament
 );
 
@@ -196,40 +201,15 @@ CREATE VIEW v_standings AS (
 			FROM v_wins LEFT OUTER JOIN v_omw
 			ON v_wins.id = v_omw.id
 		) AS wins_omw ON players.id = wins_omw.id
+	WHERE players.id <> 0
 	GROUP BY players.id, players.name, players.tournament, wins_omw.wins, wins_omw.omw
 	ORDER BY wins_omw.wins DESC, wins_omw.omw DESC
 );
 
 
-CREATE VIEW uummm AS (
-	SELECT waldo.id
-	FROM (
-		SELECT
-			v_standings.*,
-			oppid.played
-			FROM v_standings LEFT OUTER JOIN (
-				SELECT
-				v_results.opponent_id AS played
-				FROM v_results
-				WHERE v_results.player_id = 1
-				GROUP BY v_results.opponent_id
-			) AS oppid
-			ON v_standings.id = oppid.played
-		) AS waldo
-		WHERE waldo.tournament = 'ABC' AND waldo.played IS NULL AND waldo.id <> 1
-);
-
-
-/*
-SELECT uummm.id, uummm.name FROM uummm WHERE
-
-	SELECT
-	FROM v_standings LEFT OUTER JOIN v_results ON v_standings.id = v_results.player_id WHERE v_results.player_id = 1 GROUP BY v_standings.id, v_standings.name, v_standings.tournament, v_standings.wins, v_standings.omw, v_results.player_id;
-
-*/
 -- Creating view for Swiss tournament with no rematches.
 -- Columns: player_id, opponent id, opponenets wins and opponents opponenets wins...
-
+/*
 CREATE VIEW v_swissOpponents AS (
 	SELECT
 		v_results.tournament AS tournament,
@@ -240,3 +220,4 @@ CREATE VIEW v_swissOpponents AS (
 	FROM v_results LEFT OUTER JOIN v_standings ON v_results.opponent_id = v_standings.id
 	WHERE v_results.player_id <> 1 AND v_results.opponent_id <> 1
 );
+*/

@@ -20,7 +20,8 @@ thePlayers = [
 	('WOW', 107, 'Small Guy'),
 	('WOW', 108, 'Big Guy'),
 	('WOW', 109, 'Good Guy'),
-	('WOW', 110, 'Bad Guy')
+	('WOW', 110, 'Bad Guy'),
+	('WOW', 111, 'Cool Guy')
 ]
 
 theResults = [
@@ -66,6 +67,10 @@ def roundOfSwiss(tournament):
 
     """
     matches = swissPairings(tournament)
+    if len(matches[0]) == 2:
+		byeRound = matches[0]
+		reportMatch(tournament, byeRound[0], 0, 'win')
+		del matches[0]
     for match in matches:
         result = random.choice(theResults)
         reportMatch(tournament, match[0], match[2], result)
