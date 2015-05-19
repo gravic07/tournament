@@ -10,7 +10,7 @@ import psycopg2
 def connect():
     """Connect to the PostgreSQL database.
 
-    Returns a database connection.
+    Returns: a database connection.
     """
     return psycopg2.connect("dbname=tournament")
 
@@ -18,7 +18,7 @@ def connect():
 def deleteMatches(tournament='blnk'):
     """Remove all the match records from an individual or all tournaments
 
-    Arguments:
+    Args:
       tournament:  Optional argument that takes a three character code assigned
                    to each tournament.  Matches will be deleted for the
                    tournament code passed.
@@ -42,7 +42,7 @@ def deleteMatches(tournament='blnk'):
 def deletePlayers(player='blnk'):
     """Remove an individual player or all players records from the database.
 
-    Arguments:
+    Args:
       player:  Optional argument that takes the ID of a player and deletes the
                record for that player.
         blnk:  If there is no argument passed, all players will be deleted.
@@ -68,7 +68,7 @@ def deletePlayers(player='blnk'):
 def countPlayers(tournament='blnk'):
     """Returns the number of players registered for a tournament or all tournaments.
 
-    Arguments:
+    Args:
       tournament:  Optional argument that takes a three character code assigned
                    to each tournament.  Players will be counted for the
                    tournament code passed.
@@ -98,7 +98,7 @@ def countPlayers(tournament='blnk'):
 def registerPlayer(tournament, name):
     """Adds a player to the tournament database.
 
-    Arguments:
+    Args:
       tournament:  Optional argument that takes a three character code assigned
                    to each tournament.  Player will be registered to compete in
                    the tournament passed.
