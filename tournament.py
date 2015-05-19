@@ -17,13 +17,16 @@ def connect():
 
 def deleteMatches(tournament='blnk'):
     """Remove all the match records from an individual or all tournaments
+    
+    When a tournament code is passed as the argument, only the players
+    registered to that tournament will be deleted.  If no argument is passed,
+    all players in all tournaments will be deleted.
 
     Args:
-      tournament:  Optional argument that takes a three character code assigned
-                   to each tournament.  Matches will be deleted for the
-                   tournament code passed.
-            blnk:  If there is no argument passed, all matches in all
-                   tournaments will be deleted.
+        tournament:  Optional argument that takes a three character code
+            assigned to each tournament.
+        blnk:  If there is no argument passed, all matches in all tournaments
+            will be deleted.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -40,16 +43,19 @@ def deleteMatches(tournament='blnk'):
 
 
 def deletePlayers(player='blnk'):
-    """Remove an individual player or all players records from the database.
+    """Removes player(s) from the database.
+    
+    When a player's ID is passed as the argument, that player is deleted from
+    the database.  If no player ID is specified, all players will be deleted.
+    
+    In both cases, when a player is deleted from the database all of the match
+    records in which the player(s) were either the player or opponent will be
+    deleted as well.  This is due to a constraint on the database requiring
+    that a player be currently registered to have match records.
 
     Args:
-      player:  Optional argument that takes the ID of a player and deletes the
-               record for that player.
+        player:  Optional argument that accepts the ID of a registered player.
         blnk:  If there is no argument passed, all players will be deleted.
-
-    Side Effects:
-      When a player is deleted, all of the match records for that player are
-      also deleted due to a constraint on the player/opponenet ID columns.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -66,17 +72,17 @@ def deletePlayers(player='blnk'):
 
 
 def countPlayers(tournament='blnk'):
-    """Returns the number of players registered for a tournament or all tournaments.
+    """Returns the number of players registered.
+    
+    When a tournament code is passed as the argument, the count returned will
+    be limited to the players in that tournament.  If no argument is passed,
+    the count of all registered players will be returned.
 
     Args:
-      tournament:  Optional argument that takes a three character code assigned
-                   to each tournament.  Players will be counted for the
-                   tournament code passed.
-            blnk:  If there is no argument passed, all players in all
-                   tournaments will be counted.
-
-    Returns int representing the number of players in a specified tournament or
-    in all tournaments.
+        tournament:  Optional argument that takes a three character code
+            assigned to each tournament.
+        blnk:  If there is no argument passed, all players in all tournaments
+            will be counted.
     """
     db = connect()
     db_cursor = db.cursor()
