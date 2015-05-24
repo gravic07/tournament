@@ -22,6 +22,10 @@ def deleteMatches(tournament='blnk'):
     registered to that tournament will be deleted.  If no argument is passed,
     all players in all tournaments will be deleted.
 
+    When a tournament code is passed as the argument, only the players
+    registered to that tournament will be deleted.  If no argument is passed,
+    all players in all tournaments will be deleted.
+
     Args:   tournament:  Optional argument that takes a three character code
                 assigned to each tournament.
             blnk:  If there is no argument passed, all matches in all
