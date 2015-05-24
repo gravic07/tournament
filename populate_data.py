@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import random
-import itertools
 
 from tournament import connect
 from tournament import reportMatch
@@ -9,7 +8,8 @@ from tournament import swissPairings
 
 from tournament_test import testDelete
 
-# You can add players to the list below in the form of (tournament, player id, player name)
+# You can add players to the list below in the form of:
+# (tournament, player id, player name)
 thePlayers = [
 	('WOW', 101, 'New Guy'),
 	('WOW', 102, 'Old Guy'),
@@ -62,15 +62,14 @@ def signUps(listOfPlayers):
 def roundOfSwiss(tournament):
     """Execute a round of the Swiss Tournament
 
-	Args:
-	  tournament:
+	Args:	tournament:
 
     """
     matches = swissPairings(tournament)
-    if len(matches[0]) == 2:
-		byeRound = matches[0]
-		reportMatch(tournament, byeRound[0], 0, 'win')
-		del matches[0]
+    if matches[0][2] == 0:
+        byeRound = matches[0]
+        reportMatch(tournament, byeRound[0], 0, 'win')
+        del matches[0]
     for match in matches:
         result = random.choice(theResults)
         reportMatch(tournament, match[0], match[2], result)

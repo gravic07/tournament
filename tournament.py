@@ -213,79 +213,91 @@ def swissPairings(tournament='blnk'):
     """
     db = connect()
     db_cursor = db.cursor()
+    getPlayers = "SELECT id, name FROM v_standings"
+    fromTournament = " WHERE tournament = %s"
     if tournament == 'blnk':
-        query = "SELECT id, name FROM v_standings"
-        db_cursor.execute(query)
+        db_cursor.execute(getPlayers)
     else:
-        query = "SELECT id, name FROM v_standings WHERE tournament = %s"
-        db_cursor.execute(query, (tournament,))
+        db_cursor.execute(getPlayers + fromTournament, (tournament,))
     players = db_cursor.fetchall()
-    z_pairings = []
-    opponent = []
-    played = []
-    byeRound = []
-    num = len(players)
-    if num % 2:
-        # Create a list of player IDs sorted by least wins and then least OMWs
-        query = "SELECT v_standings.id AS id, v_standings.name AS name FROM v_standings ORDER BY v_standings.wins, v_standings.omw"
-        db_cursor.execute(query)
-        losers = db_cursor.fetchall()
-        # Create list of player IDs that have already had a bye round
-        query = "SELECT player_id AS id, player_name AS name FROM v_results WHERE opponent_id=0 GROUP BY player_id, player_name"
-        db_cursor.execute(query)
-        byeAlready = db_cursor.fetchall()
-        # Remove player IDs that have had a bye round from the players
-        # sorted by loses
-        byeCandidates = [x for x in losers if x not in byeAlready]
-        # Report the bye match as a win for the player
-        # Shouldn't report match since is only reporting
-        # reportMatch(tournament, byeCandidates[0][0], 0, 'win')
-        # Remove the player select for bye from the list of players for the
-        # Swiss pairings
+    swissPairs = []
+    alreadyPlayed = []
+    recordBye = []
+    countOfPlayers = len(players)
+    # Assign a bye week if there is an odd number of players in the round
+    if countOfPlayers % 2:
+        playersByLeastWins = """
+        SELECT v_standings.id AS id, v_standings.name AS name
+        FROM v_standings
+        ORDER BY v_standings.wins, v_standings.omw
+        """
+        db_cursor.execute(playersByLeastWins)
+        playersByLeastWins = db_cursor.fetchall()
+        playersAlreadyBye = """
+        SELECT player_id AS id, player_name AS name
+        FROM v_results
+        WHERE opponent_id=0
+        GROUP BY player_id, player_name
+        """
+        db_cursor.execute(playersAlreadyBye)
+        playersAlreadyBye = db_cursor.fetchall()
+        byeCandidates = [player for player in playersByLeastWins
+                          if player not in playersAlreadyBye]
         playerWithBye = [byeCandidates[0],]
-        players = [x for x in players if x not in playerWithBye]
-        byeRound = (byeCandidates[0][0], byeCandidates[0][1], 0, 'BYE')
-    # While there are at least 2 players left, the top ranked player will be
-    # paired with the closest ranked player to himself that is not himself,
-    # was not selected for a bye week, and has not already played the player.
-    while num > 1:
+        players = [player for player in players if player not in playerWithBye]
+        recordBye = (byeCandidates[0][0], byeCandidates[0][1], 0, 'BYE')
+        # print '==> Bye week for ' + str(playerWithBye)
+    # Pair players based on the stipulations in the doc string
+    while countOfPlayers > 1:
         player = players[0]
+        findOpponents = """
+            SELECT waldo.id, waldo.name
+            FROM (
+                SELECT v_standings.*, oppid.played
+                FROM v_standings LEFT OUTER JOIN (
+                    SELECT v_results.opponent_id AS played
+                    FROM v_results
+                    WHERE v_results.player_id = %s
+                    GROUP BY v_results.opponent_id) AS oppid
+                ON v_standings.id = oppid.played) AS waldo
+            WHERE waldo.played IS NULL AND waldo.id <> %s
+            """
+        withTournament = " AND waldo.tournament =%s"
+        byeInEffect = " AND waldo.id <> %s"
         if tournament == 'blnk':
-            if byeRound == []:
-                query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.played IS NULL AND waldo.id <> %s"
-                db_cursor.execute(query, (str(player[0]), str(player[0])))
+            if recordBye == []:
+                db_cursor.execute(findOpponents,
+                (str(player[0]), str(player[0])))
             else:
-                query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.played IS NULL AND waldo.id <> %s AND waldo.id <> %s"
-                db_cursor.execute(query, (str(player[0]), str(player[0]), str(playerWithBye[0][0])))
+                db_cursor.execute(findOpponents + byeInEffect,
+                (str(player[0]), str(player[0]), str(playerWithBye[0][0])))
         else:
-            if byeRound == []:
-                query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.tournament =%s AND waldo.played IS NULL AND waldo.id <> %s"
-                db_cursor.execute(query, (str(player[0]), tournament, str(player[0])))
+            if recordBye == []:
+                db_cursor.execute(findOpponents + withTournament,
+                (str(player[0]), tournament, str(player[0])))
             else:
-                query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.tournament =%s AND waldo.played IS NULL AND waldo.id <> %s AND waldo.id <> %s"
-                db_cursor.execute(query, (str(player[0]), tournament, str(player[0]), str(playerWithBye[0][0])))
+                db_cursor.execute(findOpponents + withTournament + byeInEffect, (str(player[0]), str(player[0]), tournament,
+                str(playerWithBye[0][0])))
 
-        opponent_list = db_cursor.fetchall()
-        opponent_list = [x for x in opponent_list if x not in played]
+        opponentList = db_cursor.fetchall()
+        opponentList = [opponent for opponent in opponentList
+                         if opponent not in alreadyPlayed]
         try:
-            opponent = opponent_list[0]
-            print str(player) + ' ... vs ... ' + str(opponent)
+            opponent = opponentList[0]
+            # print '==> ' + str(player) + ' ... vs ... ' + str(opponent)
             match = player + opponent
-            z_pairings += (match,)
-            played += (player, opponent)
+            swissPairs += (match,)
+            alreadyPlayed += (player, opponent)
             players = [x for x in players if x not in (player, opponent)]
-            num = len(players)
+            countOfPlayers = len(players)
         except:
             print str(player) + ' has played all opponents in Tournament: ' + tournament
             print 'Aborting swissPairings().'
             break
-    # print '==> Bye week for ' + byeCandidates[0][1] + ' (ID: ' + byeCandidates[0][1] + ').'
-    print '==> ' + str(byeRound)
-    for pair in z_pairings:
+    print '==> ' + str(recordBye)
+    for pair in swissPairs:
         print '==> ' + str(pair)
     db.rollback()
     db.close()
-    byeRound = [byeRound,]
-    return byeRound + z_pairings
-
-swissPairings('WOW')
+    recordBye = [recordBye,]
+    return recordBye + swissPairs
