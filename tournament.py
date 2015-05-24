@@ -10,7 +10,7 @@ import psycopg2
 def connect():
     """Connect to the PostgreSQL database.
 
-    Returns a database connection.
+    Returns: a database connection.
     """
     return psycopg2.connect("dbname=tournament")
 
@@ -18,12 +18,14 @@ def connect():
 def deleteMatches(tournament='blnk'):
     """Remove all the match records from an individual or all tournaments
 
-    Arguments:
-      tournament:  Optional argument that takes a three character code assigned
-                   to each tournament.  Matches will be deleted for the
-                   tournament code passed.
+    When a tournament code is passed as the argument, only the players
+    registered to that tournament will be deleted.  If no argument is passed,
+    all players in all tournaments will be deleted.
+
+    Args:   tournament:  Optional argument that takes a three character code
+                assigned to each tournament.
             blnk:  If there is no argument passed, all matches in all
-                   tournaments will be deleted.
+                tournaments will be deleted.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -40,16 +42,19 @@ def deleteMatches(tournament='blnk'):
 
 
 def deletePlayers(player='blnk'):
-    """Remove an individual player or all players records from the database.
+    """Removes player(s) from the database.
 
-    Arguments:
-      player:  Optional argument that takes the ID of a player and deletes the
-               record for that player.
-        blnk:  If there is no argument passed, all players will be deleted.
+    When a player's ID is passed as the argument, that player is deleted from
+    the database.  If no player ID is specified, all players will be deleted.
 
-    Side Effects:
-      When a player is deleted, all of the match records for that player are
-      also deleted due to a constraint on the player/opponenet ID columns.
+    In both cases, when a player is deleted from the database all of the match
+    records in which the player(s) were either the player or opponent will be
+    deleted as well.  This is due to a constraint on the database requiring
+    that a player be currently registered to have match records.
+
+    Args:   player:  Optional argument that accepts the ID of a registered
+                player.
+            blnk:  If there is no argument passed, all players will be deleted.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -66,17 +71,16 @@ def deletePlayers(player='blnk'):
 
 
 def countPlayers(tournament='blnk'):
-    """Returns the number of players registered for a tournament or all tournaments.
+    """Returns the number of players registered.
 
-    Arguments:
-      tournament:  Optional argument that takes a three character code assigned
-                   to each tournament.  Players will be counted for the
-                   tournament code passed.
+    When a tournament code is passed as the argument, the count returned will
+    be limited to the players in that tournament.  If no argument is passed,
+    the count of all registered players will be returned.
+
+    Args:   tournament:  Optional argument that takes a three character code
+                assigned to each tournament.
             blnk:  If there is no argument passed, all players in all
-                   tournaments will be counted.
-
-    Returns int representing the number of players in a specified tournament or
-    in all tournaments.
+                tournaments will be counted.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -98,16 +102,14 @@ def countPlayers(tournament='blnk'):
 def registerPlayer(tournament, name):
     """Adds a player to the tournament database.
 
-    Arguments:
-      tournament:  Optional argument that takes a three character code assigned
-                   to each tournament.  Player will be registered to compete in
-                   the tournament passed.
-            name:  The player's full name.  This does not need to be a uniue
-                   value
+    The database will automatically assign a unique serial id number for the
+    player.
 
-    Notes:
-      The database will automatically assign a unique serial id number for the
-      player.
+    Args:   tournament:  Optional argument that takes a three character code
+                assigned to each tournament.  Player will be registered to
+                compete in the tournament passed.
+            name:  The player's full name.  This does not need to be a uniue
+                value
     """
     db = connect()
     db_cursor = db.cursor()
@@ -128,17 +130,16 @@ def registerPlayer(tournament, name):
 
 
 def playerStandings():
-    """Returns a list of the players and their win records, sorted by wins.
+    """Returns a list of all players and their win records, sorted by wins.
 
-    Returns:
-      A list of tuples, each of which contains (id, name, wins, matches):
-             id:  the player's unique id (assigned by the database)
-           name:  the player's full name (as registered)
-           wins:  the number of matches the player has won
-        matches:  the number of matches the player has played
+    The first entry will be the player in first place, or a player tied for
+    first place.
 
-    Notes:
-      The first entry will be the player in first place, or a player tied for first place.
+    Returns:  A list of tuples, each of which contains:
+                id:  The player's unique id (assigned by the database).
+                name:  The player's full name (as registered).
+                wins:  The number of matches the player has won.
+                matches:  The number of matches the player has played.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -153,14 +154,15 @@ def playerStandings():
 def reportMatch(tournament, player, opponent, result):
     """Records the outcome of a single match between two players.
 
-    Args:
-      tournament:  A three character code assigned to each tournament.
-          player:  The id number of the first playerselfself.
-        opponent:  The id number of the player's opponent.
-          result:  The result of the match. Must be 'win', 'lose', or 'tie'.
+    reportMatch() will also report the results for the opponent into the
+    matches table.
 
-    Notes:
-      reportMatch() will also report the results for the opponent into the matches table.
+    Args:   tournament:  A three character code assigned to each tournament.
+                This would be the tournament that the players are enrolled in.
+            player:  The id number of the first player.
+            opponent:  The id number of the player's opponent.
+            result:  The result of the match. Must be 'win', 'lose', or 'tie'.
+                This is reported from the perspective of the 'player'.
     """
     db = connect()
     db_cursor = db.cursor()
@@ -181,16 +183,23 @@ def reportMatch(tournament, player, opponent, result):
     db.close()
 
 
-def swissPairings(tournament):
+# Make the tournament argument optional to that all players will be included
+# if it is left blank.
+def swissPairings(tournament='blnk'):
     """Returns a list of pairs of players for the next round of a match.
 
-    Assuming that there are an even number of players registered, each player
-    appears exactly once in the pairings.  Each player is paired with another
-    player with an equal or nearly-equal win record, that is, a player adjacent
-    to him or her in the standings.
+    This sorts the current players by wins and then by opponent match wins.
+    If there is an odd number of players, a bye week is assigned to the
+    player closest to last place that has not had a bye round already.  (Each
+    player can only have one bye round.)  The first place player is then paired
+    with the highest ranked player that he has not already playerd. (Each
+    player can only play another player one time.)  If the pairings can not be
+    completed due to a player having played all other players, the pairing will
+    be aborted.
 
-    NEED TO:
-        incorporate bye week if odd number of players
+    Args:     tournament:  A three character code assigned to each tournament.
+                  Only the players that are registered for the tournament code
+                  passed in will be included in the pairings.
 
     Returns:
         A list of tuples, each of which contains (id1, name1, id2, name2)
@@ -201,8 +210,12 @@ def swissPairings(tournament):
     """
     db = connect()
     db_cursor = db.cursor()
-    query = "SELECT id, name FROM v_standings WHERE tournament = %s"
-    db_cursor.execute(query, (tournament,))
+    if tournament == 'blnk':
+        query = "SELECT id, name FROM v_standings"
+        db_cursor.execute(query)
+    else:
+        query = "SELECT id, name FROM v_standings WHERE tournament = %s"
+        db_cursor.execute(query, (tournament,))
     players = db_cursor.fetchall()
     z_pairings = []
     opponent = []
@@ -211,55 +224,65 @@ def swissPairings(tournament):
     num = len(players)
     if num % 2:
         # Create a list of player IDs sorted by least wins and then least OMWs
-    	query = "SELECT v_standings.id AS id, v_standings.name AS name FROM v_standings ORDER BY v_standings.wins, v_standings.omw"
-    	db_cursor.execute(query)
-    	losers = db_cursor.fetchall()
-        # Create list of player IDs that have had a bye round already
-    	query = "SELECT player_id AS id, player_name AS name FROM v_results WHERE opponent_id=0 GROUP BY player_id, player_name"
-    	db_cursor.execute(query)
-    	byeAlready = db_cursor.fetchall()
+        query = "SELECT v_standings.id AS id, v_standings.name AS name FROM v_standings ORDER BY v_standings.wins, v_standings.omw"
+        db_cursor.execute(query)
+        losers = db_cursor.fetchall()
+        # Create list of player IDs that have already had a bye round
+        query = "SELECT player_id AS id, player_name AS name FROM v_results WHERE opponent_id=0 GROUP BY player_id, player_name"
+        db_cursor.execute(query)
+        byeAlready = db_cursor.fetchall()
         # Remove player IDs that have had a bye round from the players
         # sorted by loses
-    	byeCandidates = [x for x in losers if x not in byeAlready]
+        byeCandidates = [x for x in losers if x not in byeAlready]
         # Report the bye match as a win for the player
-        print byeCandidates
-        print '^-- byeCandidates'
         # Shouldn't report match since is only reporting
         # reportMatch(tournament, byeCandidates[0][0], 0, 'win')
         # Remove the player select for bye from the list of players for the
         # Swiss pairings
-        byeRound = [byeCandidates[0], ]
-        print byeRound
-        print '^-- Remove bye'
-        players = [x for x in players if x not in byeRound]
-        print players
-        print '^-- players after removing bye'
+        playerWithBye = [byeCandidates[0],]
+        players = [x for x in players if x not in playerWithBye]
+        byeRound = (byeCandidates[0][0], byeCandidates[0][1], 0, 'BYE')
+    # While there are at least 2 players left, the top ranked player will be
+    # paired with the closest ranked player to himself that is not himself,
+    # was not selected for a bye week, and has not already played the player.
     while num > 1:
-        print players
-        print '^-- After eiting the if statement'
         player = players[0]
-        query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.tournament =%s AND waldo.played IS NULL AND waldo.id <> %s AND waldo.id <> %s"
-        db_cursor.execute(query, (str(player[0]), tournament, str(player[0]), str(byeRound[0][0])))
+        if tournament == 'blnk':
+            if byeRound == []:
+                query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.played IS NULL AND waldo.id <> %s"
+                db_cursor.execute(query, (str(player[0]), str(player[0])))
+            else:
+                query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.played IS NULL AND waldo.id <> %s AND waldo.id <> %s"
+                db_cursor.execute(query, (str(player[0]), str(player[0]), str(playerWithBye[0][0])))
+        else:
+            if byeRound == []:
+                query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.tournament =%s AND waldo.played IS NULL AND waldo.id <> %s"
+                db_cursor.execute(query, (str(player[0]), tournament, str(player[0])))
+            else:
+                query = "SELECT waldo.id, waldo.name FROM (SELECT v_standings.*, oppid.played FROM v_standings LEFT OUTER JOIN (SELECT v_results.opponent_id AS played FROM v_results WHERE v_results.player_id = %s GROUP BY v_results.opponent_id) AS oppid ON v_standings.id = oppid.played) AS waldo WHERE waldo.tournament =%s AND waldo.played IS NULL AND waldo.id <> %s AND waldo.id <> %s"
+                db_cursor.execute(query, (str(player[0]), tournament, str(player[0]), str(playerWithBye[0][0])))
+
         opponent_list = db_cursor.fetchall()
         opponent_list = [x for x in opponent_list if x not in played]
         try:
             opponent = opponent_list[0]
-            print 'Player ID: ' + str(player) + ' ... vs ... Player ID: ' + str(opponent)
+            print str(player) + ' ... vs ... ' + str(opponent)
             match = player + opponent
             z_pairings += (match,)
             played += (player, opponent)
             players = [x for x in players if x not in (player, opponent)]
             num = len(players)
         except:
-            print 'Player ID: ' + str(player) + ' has played all opponents in Tournament: ' + tournament
-            print 'Aborting roundOfSwiss().'
-            print 'All matches to this point have been committed to the database.'
+            print str(player) + ' has played all opponents in Tournament: ' + tournament
+            print 'Aborting swissPairings().'
             break
     # print '==> Bye week for ' + byeCandidates[0][1] + ' (ID: ' + byeCandidates[0][1] + ').'
+    print '==> ' + str(byeRound)
     for pair in z_pairings:
-        print '==> ' + str(pair) + '/n'
+        print '==> ' + str(pair)
     db.rollback()
     db.close()
+    byeRound = [byeRound,]
     return byeRound + z_pairings
 
 swissPairings('WOW')
