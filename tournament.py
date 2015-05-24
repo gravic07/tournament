@@ -205,12 +205,11 @@ def swissPairings(tournament='blnk'):
                   Only the players that are registered for the tournament code
                   passed in will be included in the pairings.
 
-    Returns:
-        A list of tuples, each of which contains (id1, name1, id2, name2)
-            id1: the first player's unique id
-            name1: the first player's name
-            id2: the second player's unique id
-            name2: the second player's name
+    Returns:  A list of tuples, each of which contains (id1, name1, id2, name2)
+                  id1: the first player's unique id
+                  name1: the first player's name
+                  id2: the second player's unique id
+                  name2: the second player's name
     """
     db = connect()
     db_cursor = db.cursor()
