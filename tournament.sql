@@ -1,7 +1,5 @@
 -- Table definitions for the tournament project.
 
-
-
 DROP DATABASE tournament;
 CREATE DATABASE tournament;
 -- Connect to the newly created DB
