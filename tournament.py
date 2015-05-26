@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#
+
 # tournament.py -- implementation of a Swiss-system tournament
 # This file defines multiple Python functions to be used in facilitating
 # a Swiss-system tournament
