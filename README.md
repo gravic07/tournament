@@ -26,10 +26,14 @@ This application was created as my submission for Project 2 of Udacity's Full St
   - Other systems: Use your favorite terminal program.
 2. Change to the desired parent directory
   - Example: `cd Desktop/`
-3. Using Git, fetch the VM configuration:
+3. Using Git, clone the VM configuration:
   - Run: `git clone http://github.com/udacity/fullstack-nanodegree-vm fullstack`
   - This will create a new directory titled *fullstack* that contains all of the necessary configurations to run this application.
-4. Run Vagrant by entering: `vagrant up`
+4. Move to the *vagrant* folder by entering: `cd fullstack/vagrant/`
+5. Using Git, clone this project:
+  - Run: `git clone https://github.com/gravic07/tournament.git tournament`
+  - This will create a directory inside the *vagrant* directory titled *tournament*.
+6. Run Vagrant by entering: `vagrant up`
 
 
 ## Usage
