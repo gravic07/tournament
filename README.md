@@ -78,6 +78,8 @@ An example of code from the Python shell inside the vagrant vm.
 
 
 ###Functions
+>**Note:** Make sure you import tournament.py before attempting to call any of these functions by entering `import tournament` and pressing *enter*.
+
 >**Note:** All functions need to be proceeded by `tournament.` e.g. `tournament.playerStandings()`
 
 >**Note:** The *tournament* argument is a three character code that is assigned to players in the same tournament.
