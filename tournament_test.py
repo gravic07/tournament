@@ -115,7 +115,6 @@ def testPairings():
     reportMatch('ABC', id1, id2, 'win')
     reportMatch('ABC', id3, id4, 'win')
     pairings = swissPairings('ABC')
-    print pairings
     if len(pairings) != 2:
         raise ValueError(
             "For four players, swissPairings should return two pairs.")
