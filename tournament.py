@@ -22,10 +22,6 @@ def deleteMatches(tournament='blnk'):
     registered to that tournament will be deleted.  If no argument is passed,
     all players in all tournaments will be deleted.
 
-    When a tournament code is passed as the argument, only the players
-    registered to that tournament will be deleted.  If no argument is passed,
-    all players in all tournaments will be deleted.
-
     Args:   tournament:  Optional argument that takes a three character code
                 assigned to each tournament.
             blnk:  If there is no argument passed, all matches in all
@@ -45,7 +41,7 @@ def deleteMatches(tournament='blnk'):
     db.close()
 
 
-def deletePlayers(player='blnk'):
+def deletePlayers(playerID='blnk'):
     """Removes player(s) from the database.
 
     When a player's ID is passed as the argument, that player is deleted from
@@ -56,20 +52,20 @@ def deletePlayers(player='blnk'):
     deleted as well.  This is due to a constraint on the database requiring
     that a player be currently registered to have match records.
 
-    Args:   player:  Optional argument that accepts the ID of a registered
+    Args:   playerID:  Optional argument that accepts the ID of a registered
                 player.
             blnk:  If there is no argument passed, all players will be deleted.
     """
     db = connect()
     db_cursor = db.cursor()
-    if player == 'blnk':
+    if playerID == 'blnk':
         query = "DELETE FROM players where id <> 0"
         db_cursor.execute(query)
         print '==>  All players were deleted successfully.'
     else:
         query = "DELETE FROM players WHERE id = %s"
-        db_cursor.execute(query, (player))
-        print '==>  Player ID: ' + player + ' deleted.'
+        db_cursor.execute(query, (playerID))
+        print '==>  Player ID: ' + playerID + ' deleted.'
     db.commit()
     db.close()
 
@@ -94,7 +90,7 @@ def countPlayers(tournament='blnk'):
         rows = db_cursor.fetchone()
         print '==>  ' + str(rows[0]) + ' players are registered for all tournaments.'
     else:
-        query = "SELECT count(*) FROM players WHERE tournament = %s, id <> 0"
+        query = "SELECT count(*) FROM players WHERE tournament = %s AND id <> 0"
         db_cursor.execute(query, (tournament,))
         rows = db_cursor.fetchone()
         print '==>  ' + str(rows[0]) + ' players are registered for tournament ' + tournament + '.'
@@ -155,7 +151,7 @@ def playerStandings():
     return standings
 
 
-def reportMatch(tournament, player, opponent, result):
+def reportMatch(tournament, playerID, opponent, result):
     """Records the outcome of a single match between two players.
 
     reportMatch() will also report the results for the opponent into the
@@ -163,26 +159,26 @@ def reportMatch(tournament, player, opponent, result):
 
     Args:   tournament:  A three character code assigned to each tournament.
                 This would be the tournament that the players are enrolled in.
-            player:  The id number of the first player.
+            playerID:  The id number of the first player.
             opponent:  The id number of the player's opponent.
             result:  The result of the match. Must be 'win', 'lose', or 'tie'.
-                This is reported from the perspective of the 'player'.
+                This is reported from the perspective of the player.
     """
     db = connect()
     db_cursor = db.cursor()
     query = "INSERT INTO matches (tournament, player_id, opponent_id, result) VALUES (%s, %s, %s, %s)"
-    db_cursor.execute(query, (tournament, player, opponent, result))
-    print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: %s' % (str(player), str(opponent), tournament, result)
+    db_cursor.execute(query, (tournament, playerID, opponent, result))
+    print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: %s' % (str(playerID), str(opponent), tournament, result)
     if opponent <> 0:
         if result == 'win':
-            db_cursor.execute(query, (tournament, opponent, player, 'lose'))
-            print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: lose' % (str(opponent), str(player), tournament)
+            db_cursor.execute(query, (tournament, opponent, playerID, 'lose'))
+            print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: lose' % (str(opponent), str(playerID), tournament)
         elif result == 'lose':
-            print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: win' % (str(opponent), str(player), tournament)
-            db_cursor.execute(query, (tournament, opponent, player, 'win'))
+            print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: win' % (str(opponent), str(playerID), tournament)
+            db_cursor.execute(query, (tournament, opponent, playerID, 'win'))
         else:
-            db_cursor.execute(query, (tournament, opponent, player, 'tie'))
-            print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: tie' % (str(opponent), str(player), tournament)
+            db_cursor.execute(query, (tournament, opponent, playerID, 'tie'))
+            print '==>  Match recorded successfully. \n ====>  Player ID: %s \n ====>  Opponent ID: %s \n ====>  Tournament: %s \n ====>  Result: tie' % (str(opponent), str(playerID), tournament)
     db.commit()
     db.close()
 
@@ -274,7 +270,7 @@ def swissPairings(tournament='blnk'):
         else:
             if recordBye == []:
                 db_cursor.execute(findOpponents + withTournament,
-                (str(player[0]), tournament, str(player[0])))
+                (str(player[0]), str(player[0]), tournament))
             else:
                 db_cursor.execute(findOpponents + withTournament + byeInEffect, (str(player[0]), str(player[0]), tournament,
                 str(playerWithBye[0][0])))
@@ -294,10 +290,13 @@ def swissPairings(tournament='blnk'):
             print str(player) + ' has played all opponents in Tournament: ' + tournament
             print 'Aborting swissPairings().'
             break
-    print '==> ' + str(recordBye)
-    for pair in swissPairs:
-        print '==> ' + str(pair)
     db.rollback()
     db.close()
     recordBye = [recordBye,]
-    return recordBye + swissPairs
+    for pair in swissPairs:
+        print '==> ' + str(pair)
+    if recordBye == [[]]:
+        return swissPairs
+    else:
+        print '==> ' + str(recordBye)
+        return recordBye + swissPairs

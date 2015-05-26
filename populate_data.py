@@ -85,7 +85,6 @@ signUps(thePlayers)
 roundOfSwiss('WOW')
 roundOfSwiss('WOW')
 roundOfSwiss('WOW')
-roundOfSwiss('WOW')
 
 
 
