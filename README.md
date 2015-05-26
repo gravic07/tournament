@@ -1,17 +1,15 @@
 #Swiss Tournament Generator
 
-This application was created for Project 2 as a part of Udacity's Full Stack
-NanoDegree program.  The objective was to create an application using Python and PSQL that could effectively conduct a Swiss Style Tournament and that
-would pass all of the checks within the *tournament_test.py* file.
+This application was created as my submission for Project 2 of Udacity's Full Stack NanoDegree program.  The objective was to create an application using Python and PSQL that could effectively conduct a Swiss Style Tournament and that would pass all of the checks within the *tournament_test.py* file.
 
 
 ##Files
 | File | Description |
 |------|-------------|
 | **tournament.py** | This is the main Python file used to conduct the Swiss Style Tournament. |
-| **tournament.sql** | Write description. |
-| **tournament_test.py** | Write description. |
-| **populate_data.py** | Write description. |
+| **tournament.sql** | This is the database used to store tournament records. |
+| **tournament_test.py** | This is a python file created by Udacity and modified to perform essential tests on the tournament application. |
+| **populate_data.py** | A Python file that will populate the tournament application with data.  Once you have logged into Vagrant with `vagrant ssh`, populate the data by entering: `python populate_data.py` |
 
 
 ## Installation
