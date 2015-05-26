@@ -124,8 +124,7 @@ Example:
 
 **swissPairings(tournament)**  
 Returns a new round of matches based on the Swiss Tournament pairing guidelines.  
-More specifically, returns a list of tuples each consisting of player id, player name, opponent id, and opponent name.  The *tournament* argument is optional and if a tournament is passed, only the players registered for that tournament will be considered in the pairing.
-
+More specifically, returns a list of tuples each consisting of player id, player name, opponent id, and opponent name.  The *tournament* argument is optional and if a tournament is passed, only the players registered for that tournament will be considered in the pairing.  
 Example:  
 ```
 [ (106, 'Short Guy', 0, 'BYE'),
