@@ -85,11 +85,3 @@ signUps(thePlayers)
 roundOfSwiss('WOW')
 roundOfSwiss('WOW')
 roundOfSwiss('WOW')
-
-
-
-
-'''
-if __name__ == '__main__':
-	#final function to run
-'''
