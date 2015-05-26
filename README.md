@@ -47,6 +47,8 @@ Vagrant box.  To connect:
 5. Execute a desired function. (see below)
 
 ###Code Example  
+An example of code from the Python shell inside the vagrant vm.
+
 ```
 >>> import tournament
 
