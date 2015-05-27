@@ -1,6 +1,6 @@
 -- Table definitions for the tournament project.
 
-DROP DATABASE tournament;
+DROP DATABASE IF EXISTS tournament;
 CREATE DATABASE tournament;
 -- Connect to the newly created DB
 \c tournament;
@@ -10,7 +10,6 @@ CREATE TABLE players (
 	tournament   varchar(3),
 		  name   text,
 	  		id   serial PRIMARY KEY,
-	  	UNIQUE   (id)
 );
 
 -- Inserting a "BYE" player to support handling bye rounds
