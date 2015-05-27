@@ -42,9 +42,15 @@ Vagrant box.  To connect:
 
 1. Log into Vagrant VM by entering: `vagrant ssh`
 2. Move to *tournament* directory by entering: `cd /vagrant/tournament/`
-3. Launch Python command line by entering `python`
-4. Import tournament by entering: `import tournament`
-5. Execute a desired function. (see below)
+3. Create the *tournament* database by entering: `psql -f tournament.sql`
+>**Note:** You can run `psql -f tournament.sql` at anytime to completely delete the database and start over.
+
+4. If you would like to test the database against Udacity's criteria, enter: `python tournament_test.py`
+>**Note:** To clear the database after running tournament_test.py, you can either call the deletePlayers() and deleteMatches() functions or refer to step 3.
+
+5. Launch Python command line by entering `python`
+6. Import tournament by entering: `import tournament`
+7. Execute a desired function. (see below)
 
 ###Code Example  
 An example of code from the Python shell inside the vagrant vm.
@@ -156,7 +162,7 @@ Created by gravic07
 ## License
 Licensed under the MIT License (MIT)
 ```
-Copyright (c) [year] [fullname]
+Copyright (c) [2015] [gravic07]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
